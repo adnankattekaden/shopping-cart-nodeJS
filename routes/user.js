@@ -12,20 +12,45 @@ const verifyLogin = (req, res, next) => {
 }
 
 /* GET home page. */
-router.get('/', function (req, res, next) {
+router.get('/', async function (req, res, next) {
+
   let user = req.session.user
-  productHelper.getAllProducts().then((products) => {
-    res.render('user/view-products', { user, products })
+  let cartCount = null
+  // console.log(user)
+  if (user){
+    cartCount = await userHelper.getCartCount(req.session.user._id)
+  }
+  
+  productHelper.getAllProducts().then((products)=>{
+    console.log(cartCount);
+    res.render('user/view-products',{products,user,cartCount})
   })
-});
+
+  });
 
 router.get('/login', (req, res) => {
-  if (req.session.loggedin) {
-    res.redirect('/')
-  } else {
-    res.render('user/login', { "loginErr": req.session.loginErr })
-    req.session.loginErr = false
-  }
+    if (req.session.loggedin){
+      res.redirect('/')
+    } else{
+      res.render('user/login', { "loginErr": req.session.loginErr })
+      req.session.loginErr = false
+    }
+
+})
+
+router.post('/login', (req, res) => {
+
+  userHelper.doLogin(req.body).then((response) => {
+    if (response.status) {
+      req.session.loggedin = true
+      req.session.user = response.user
+      // console.log(req.session,'heyyyy')
+      res.redirect('/')
+    } else {
+      req.session.loginErr = true
+      res.redirect('/login')
+    }
+  })
 
 })
 
@@ -35,46 +60,50 @@ router.get('/signup', (req, res) => {
 
 router.post('/signup', (req, res) => {
   userHelper.doSignup(req.body).then((response) => {
-    console.log(response)
+    res.redirect('/login')
   })
 })
 
 
-router.post('/login', (req, res) => {
-  userHelper.doLogin(req.body).then((response) => {
 
-    if (response.status) {
-      req.session.loggedin = true
-      req.session.user = response.user
-      res.redirect('/')
-    } else {
-      req.session.loginErr = true
-      console.log(req.session.loginErr)
-      res.redirect('/login')
-    }
-
-  })
-})
 
 router.get('/logout', (req, res) => {
   req.session.destroy()
   res.redirect('/login')
 })
 
-router.get('/cart',verifyLogin, async(req, res) => {
+router.get('/cart', verifyLogin, async (req, res) => {
   let products = await userHelper.getCartProducts(req.session.user._id)
-  console.log(products);
-  res.render('user/cart',{products,user:req.session.user})
+  let totalAmount = await userHelper.getTotalAmount(req.session.user._id)
+  res.render('user/cart', {user:req.session.user,products:products,totalAmount:totalAmount })
 })
 
 
-router.get('/add-to-cart/:id',verifyLogin,(req,res)=>{
-  userHelper.addToCart(req.params.id,req.session.user._id).then(()=>{
-    res.redirect('/')
+router.get('/add-to-cart/:id',(req, res) => {
+  userHelper.addToCart(req.params.id, req.session.user._id).then(() => {
+    res.json({status:true})
   })
 
 })
 
+
+router.post('/change-product-quantity',(req,res)=>{
+
+  userHelper.changeProductQuantity(req.body).then(async(response)=>{
+
+    response.total = await userHelper.getTotalAmount(req.body.user)
+
+    res.json(response)
+
+  })
+})
+
+
+router.get('/place-order',verifyLogin, async (req,res)=>{
+  let totalAmount = await userHelper.getTotalAmount(req.session.user._id)
+  console.log(totalAmount)
+  res.render('user/place-order',{totalAmount})
+})
 
 
 

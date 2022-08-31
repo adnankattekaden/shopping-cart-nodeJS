@@ -8,11 +8,11 @@
         {{#each products}}
         <div class="col-md-3 p-3">
           <div class="card" style="width: 15rem; height: 25rem;">
-            <img class="card-img-top" src="{{this.image}}" alt="Card image cap" style="height: 12rem;">
+            <img class="card-img-top" src="/public/images/product-images/{{this._id}}.jpg" alt="Card image cap" style="height: 12rem;">
             <div class="card-body">
               <h5 class="card-title">{{this.Mame}}</h5>
               <p class="card-text">{{this.Description}}</p>
-              <a href="/add-to-cart/{{this._id}}" class="btn btn-primary">Add To Cart</a>
+              <button onclick="addToCart('{{this._id}}')" class="btn btn-primary">Add To Cart</button>
             </div>
           </div>
         </div>
@@ -21,3 +21,4 @@
       </div>
     </div>
   </section>
+
