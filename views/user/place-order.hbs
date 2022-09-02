@@ -14,6 +14,8 @@
 
                         <label for="">Mobile</label>
                         <input class="form-control" type="text" id="mobile" name="mobile">
+
+                        <input type="text" hidden name="userId" id="" value="{{user._id}}">
                     </div>
                 </div>
 
@@ -23,13 +25,15 @@
                         <hr>
                         <div class="payment">
                             <p>Payment Method</p>
-                            <label class="radio-inline mt-2">
+                            <label class="radio-inline">
                                 <input type="radio" name="payment-method" value="COD" checked>COD
                             </label>
 
                             <label class="radio-inline mt-2">
                                 <input type="radio" name="payment-method" value="Credit Card" checked>Credit Card
                             </label>
+
+                            <button class="btn btn-success">Checkout</button>
                         </div>
                     </div>
                 </div>
@@ -37,3 +41,21 @@
         </form>
     </div>
 </section>
+
+<script>
+    $('#checkout-form').submit((e)=>{
+        e.preventDefault()
+
+        $.ajax({
+            url:'/place-order',
+            method:'POST',
+            data:$('#checkout-form').serialize(),
+            success:(response) =>{
+                if (response.status){
+                    location.href = '/order-success'
+                }
+            }
+        })
+
+    })
+</script>

@@ -40,3 +40,4 @@ function addToCart(productId) {
       }
     })
   }
+
