@@ -2,6 +2,12 @@ var db = require('../config/connection')
 var collection = require('../config/collections')
 const bcrypt = require('bcrypt')
 var objectId = require('mongodb').ObjectId
+const Razorpay = require('razorpay');
+
+var instance = new Razorpay({
+    key_id: 'rzp_test_C4GpvjAOvphcnB',
+    key_secret: 'yvMsaN3IaiMnGw67tlzRp5c7',
+  });
 
 module.exports = {
     doSignup:(userData)=>{
@@ -206,7 +212,7 @@ module.exports = {
             }
             db.get().collection(collection.ORDER_COLLECTION).insertOne(orderObj).then((response)=>{
                 db.get().collection(collection.CART_COLLECTION).deleteOne({user:objectId(order.userId)})
-                resolve(response)
+                resolve(response.insertedId)
             })
         })
     },
@@ -252,4 +258,41 @@ module.exports = {
             resolve(orderItems)
         })
     },
+    generateRazorpay:(orderId,totalAmount)=>{
+        return new Promise((resolve,reject)=>{
+            instance.orders.create({
+                amount: totalAmount*100,
+                currency: "INR",
+                receipt: ""+orderId,
+              },(err,order)=>{
+                resolve(order)
+              })
+
+        })
+
+    },
+    verifyPayment:(details)=>{
+        return new Promise((resolve,reject)=>{
+            const crypto = require('crypto')
+            let hmac = crypto.createHmac('sha256','yvMsaN3IaiMnGw67tlzRp5c7')
+            hmac.update(details['payment[razorpay_order_id]']+'|'+details['payment[razorpay_payment_id]'])
+            hmac = hmac.digest('hex')
+            if (hmac == details['payment[razorpay_signature]']){
+                resolve()
+            }else{
+                reject()
+            }
+        })
+    },
+    changePaymentStatus:(orderId)=>{
+        return new Promise((resolve,reject)=>{
+            db.get().collection(collection.ORDER_COLLECTION).updateOne({_id:objectId(orderId)},{
+                $set:{
+                    status:'placed'
+                }
+            }).then(()=>{
+                resolve()
+            })
+        })
+    }
 }
